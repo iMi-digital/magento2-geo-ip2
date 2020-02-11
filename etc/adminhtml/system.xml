@@ -44,6 +44,7 @@
                 <field id="license_key" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>License Key</label>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment><![CDATA[Since 30th December 2019 MaxMind required users to register and create a license key in order to download their databases. So entering the key is mandatory for the module to work. <a href="https://blog.maxmind.com/2019/12/18/significant-changes-to-accessing-and-using-geolite2-databases/" target="_blank">More Info.</a>]]></comment>
                 </field>
                 <field id="host" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Host</label>

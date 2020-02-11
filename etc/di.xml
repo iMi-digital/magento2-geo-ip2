@@ -29,9 +29,9 @@
     </type>
     <type name="Tobai\GeoIp2\Model\Database\Updater">
         <arguments>
-            <argument name="archive" xsi:type="object">Magento\Framework\Archive\Gz</argument>
-            <argument name="dbLocation" xsi:type="string">http://geolite.maxmind.com/download/geoip/database/%db_name%.gz</argument>
-            <argument name="dbArchiveExt" xsi:type="string">.gz</argument>
+            <argument name="archive" xsi:type="object">Tobai\GeoIp2\Helper\Archive\TarGz</argument>
+            <argument name="dbLocation" xsi:type="string">https://download.maxmind.com/app/geoip_download?edition_id=%edition_id%&amp;license_key=%license_key%&amp;suffix=%archive%</argument>
+            <argument name="dbArchiveExt" xsi:type="string">tar.gz</argument>
         </arguments>
     </type>
 </config>

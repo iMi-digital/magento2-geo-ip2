@@ -5,11 +5,15 @@
 
 namespace Tobai\GeoIp2\Model\Database;
 
+use Magento\Framework\Exception\FileSystemException;
+use Magento\Framework\Filesystem\Directory\WriteInterface;
+use Tobai\GeoIp2\Helper\TemporaryFiles;
 use Tobai\GeoIp2\Model\Database;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem;
 use Magento\Framework\Archive\ArchiveInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Tobai\GeoIp2\Model\WebService\Config as WebServiceConfig;
 
 /**
  * Update db from remote server
@@ -17,17 +21,17 @@ use Magento\Framework\Exception\LocalizedException;
 class Updater implements UpdaterInterface
 {
     /**
-     * @var \Magento\Framework\Filesystem\Directory\WriteInterface
+     * @var WriteInterface
      */
     protected $directory;
 
     /**
-     * @var \Magento\Framework\Archive\ArchiveInterface
+     * @var ArchiveInterface
      */
     protected $archive;
 
     /**
-     * @var \Tobai\GeoIp2\Model\Database
+     * @var Database
      */
     protected $database;
 
@@ -44,17 +48,33 @@ class Updater implements UpdaterInterface
     protected $dbArchiveExt;
 
     /**
+     * @var WebServiceConfig
+     */
+    private $webServiceConfig;
+
+    /**
+     * @var TemporaryFiles
+     */
+    private $temporaryFiles;
+
+    /**
      * @param string $dbLocation
-     * @param \Tobai\GeoIp2\Model\Database $database
-     * @param \Magento\Framework\Filesystem $filesystem
-     * @param \Magento\Framework\Archive\ArchiveInterface $archive
+     * @param Database $database
+     * @param Filesystem $filesystem
+     * @param ArchiveInterface $archive
+     * @param WebServiceConfig $webServiceConfig
+     * @param TemporaryFiles $temporaryFiles
      * @param string $dbArchiveExt
+     *
+     * @throws FileSystemException
      */
     public function __construct(
         $dbLocation,
         Database $database,
         Filesystem $filesystem,
         ArchiveInterface $archive,
+        WebServiceConfig $webServiceConfig,
+        TemporaryFiles $temporaryFiles,
         $dbArchiveExt = ''
     ) {
         $this->dbLocation = $dbLocation;
@@ -62,6 +82,8 @@ class Updater implements UpdaterInterface
         $this->directory = $filesystem->getDirectoryWrite(DirectoryList::VAR_DIR);
         $this->archive = $archive;
         $this->dbArchiveExt = $dbArchiveExt;
+        $this->webServiceConfig = $webServiceConfig;
+        $this->temporaryFiles = $temporaryFiles;
     }
 
     /**
@@ -121,28 +143,37 @@ class Updater implements UpdaterInterface
      */
     protected function getDbUrl($dbCode)
     {
-        return str_replace('%db_name%', $this->database->getDbFileName($dbCode), $this->dbLocation);
+        $editionId = str_replace('.mmdb', '', $this->database->getDbFileName($dbCode));
+        $dbUrl = str_replace('%edition_id%', $editionId, $this->dbLocation);
+        $dbUrl = str_replace('%archive%', $this->dbArchiveExt, $dbUrl);
+        $dbUrl = str_replace('%license_key%', $this->webServiceConfig->getLicenseKey(), $dbUrl);
+
+        return $dbUrl;
     }
 
     /**
      * @param string $dbCode
+     *
      * @return string
      */
     protected function getDbArchiveFilePath($dbCode)
     {
-        return $this->database->getDbPath($dbCode) . $this->dbArchiveExt;
+        return $this->database->getDbPath($dbCode) . '.' . $this->dbArchiveExt;
     }
 
     /**
      * @param string $dbCode
+     *
      * @throws LocalizedException
      */
     protected function unpackDb($dbCode)
     {
         $this->archive->unpack(
             $this->directory->getAbsolutePath($this->getDbArchiveFilePath($dbCode)),
-            $this->directory->getAbsolutePath($this->database->getDbPath($dbCode))
+            $this->temporaryFiles->getTmpBasePath()
         );
+        $this->moveDbFromTmp($dbCode);
+        $this->temporaryFiles->delete($this->getTmpDbDirectory($dbCode));
 
         if (!$this->directory->isExist($this->database->getDbPath($dbCode))) {
             throw new LocalizedException(__('Cannot unpack db file.'));
@@ -151,9 +182,38 @@ class Updater implements UpdaterInterface
 
     /**
      * @param string $dbCode
+     *
+     * @throws FileSystemException
      */
     protected function deletePackDb($dbCode)
     {
         $this->directory->delete($this->getDbArchiveFilePath($dbCode));
     }
+
+    /**
+     * @param string $dbCode
+     *
+     * @return void
+     * @throws FileSystemException
+     */
+    private function moveDbFromTmp($dbCode)
+    {
+        $tmpDbDirectory = $this->getTmpDbDirectory($dbCode);
+        $tmpDbPath = $tmpDbDirectory . DIRECTORY_SEPARATOR . $this->database->getDbFileName($dbCode);
+
+        $this->directory->renameFile($tmpDbPath, $this->directory->getAbsolutePath($this->database->getDbPath($dbCode)));
+    }
+
+    /**
+     * @param string $dbCode
+     *
+     * @return string
+     */
+    private function getTmpDbDirectory($dbCode)
+    {
+        $tmpDbDirectory = $this->database->getDbFileNameWithoutExtension($dbCode);
+        $tmpDbDirectory = $this->temporaryFiles->findDirectory($tmpDbDirectory);
+
+        return $tmpDbDirectory;
+}
 }
