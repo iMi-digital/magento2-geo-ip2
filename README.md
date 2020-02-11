@@ -31,3 +31,9 @@ Please follow next instructions to successfully install ToBai GeoIP2 in your Mag
         bin/magento cache:enable
 
 Now you should see new ToBai tab at Stores > Configuration. When you click at this tab you will see GeoIP2 section.
+
+## License key
+  
+Since 30th December 2019 MaxMind required users to register and create a license key in order to download their databases. So entering the key is mandatory for the module to work. [More Info.](https://blog.maxmind.com/2019/12/18/significant-changes-to-accessing-and-using-geolite2-databases/)
+
+Enter your license key under Stores->Settings->Configuration->TOBAI->GeoIP2
