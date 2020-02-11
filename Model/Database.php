@@ -6,6 +6,7 @@
 namespace Tobai\GeoIp2\Model;
 
 use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\Exception\FileSystemException;
 
 /**
  * Database model
@@ -39,6 +40,8 @@ class Database
     /**
      * @param \Magento\Framework\Filesystem $filesystem
      * @param array $databases
+     *
+     * @throws FileSystemException
      */
     public function __construct(
         \Magento\Framework\Filesystem $filesystem,
@@ -65,6 +68,16 @@ class Database
     public function getDbFileName($dbCode)
     {
         return !empty($this->databases[$dbCode]) ? $this->databases[$dbCode] : false;
+    }
+
+    /**
+     * @param $dbCode
+     *
+     * @return mixed
+     */
+    public function getDbFileNameWithoutExtension($dbCode)
+    {
+        return str_replace('.mmdb', '', $this->getDbFileName($dbCode));
     }
 
     /**
